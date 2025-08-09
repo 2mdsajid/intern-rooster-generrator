@@ -1,0 +1,49 @@
+// prisma/schema.prisma
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// Stores each intern's name uniquely.
+model Intern {
+  id     Int    @id @default(autoincrement())
+  name   String @unique
+  duties Duty[] // An intern can have many duties.
+}
+
+// Stores the main departments like MEDICINE, SURGERY, etc.
+model Department {
+  id       Int       @id @default(autoincrement())
+  name     String    @unique
+  subunits Subunit[] // A department has many subunits.
+}
+
+// Stores the specific divisions like 'med1', 'icu1', etc.
+model Subunit {
+  id           Int        @id @default(autoincrement())
+  name         String
+  department   Department @relation(fields: [departmentId], references: [id])
+  departmentId Int
+  duties       Duty[] // A subunit can have many duties scheduled in it.
+}
+
+// This is the central table, connecting everything.
+// Each record represents one intern's duty in one subunit for one week.
+model Duty {
+  id        Int      @id @default(autoincrement())
+  startDate DateTime
+  endDate   DateTime
+  intern    Intern   @relation(fields: [internId], references: [id])
+  internId  Int
+  subunit   Subunit  @relation(fields: [subunitId], references: [id])
+  subunitId Int
+
+  // --- ADD THIS LINE ---
+  // This ensures a duty is unique for an intern in a specific subunit on a specific start date.
+  @@unique([internId, subunitId, startDate])
+}
