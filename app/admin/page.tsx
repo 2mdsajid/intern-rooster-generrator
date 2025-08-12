@@ -20,15 +20,15 @@ export default function AdminPage() {
 
 
     setTimeout(() => {
-        try {
-            const { finalSchedules, departmentData: newDeptData } = generateSchedules(formData);
-            setScheduleOutput(finalSchedules);
-            setDepartmentData(newDeptData);
-        } catch (error) {
-            console.error("Failed to generate schedule:", error);
-        } finally {
-            setIsLoading(false);
-        }
+      try {
+        const { finalSchedules, departmentData: newDeptData } = generateSchedules(formData);
+        setScheduleOutput(finalSchedules);
+        setDepartmentData(newDeptData);
+      } catch (error) {
+        console.error("Failed to generate schedule:", error);
+      } finally {
+        setIsLoading(false);
+      }
     }, 50);
   };
 
@@ -36,22 +36,33 @@ export default function AdminPage() {
     <main className="min-h-screen bg-gray-50 p-4 sm:p-8">
       <div className="max-w-7xl mx-auto">
         <header className="mb-8">
-            <h1 className="text-4xl font-extrabold text-gray-900 tracking-tight">
-                Admin: Schedule Generator
-            </h1>
-            <p className="mt-2 text-lg text-gray-600">
-                Create and save new rotational schedules to the database.
-            </p>
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div>
+              <h1 className="text-4xl font-extrabold text-gray-900 tracking-tight">
+                Generate Schedule
+              </h1>
+            </div>
+            <div className="flex items-center">
+              <a
+                href="/admin/guide"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
+              >
+                📖 User Guide
+              </a>
+            </div>
+          </div>
         </header>
 
         <div className="mt-8">
-            <ScheduleForm onSubmit={handleFormSubmit} isLoading={isLoading} />
-            <ScheduleResults 
-                isLoading={isLoading} 
-                schedules={scheduleOutput} 
-                departmentData={departmentData}
-                masterInternList={masterInternList} // <-- Pass it down
-            />
+          <ScheduleForm onSubmit={handleFormSubmit} isLoading={isLoading} />
+          <ScheduleResults
+            isLoading={isLoading}
+            schedules={scheduleOutput}
+            departmentData={departmentData}
+            masterInternList={masterInternList} // <-- Pass it down
+          />
         </div>
       </div>
     </main>

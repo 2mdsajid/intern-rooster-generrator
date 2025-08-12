@@ -31,8 +31,8 @@ export default function InternPill({ id, name, cellId, onRemove }: InternPillPro
       className="flex items-center justify-between bg-blue-100 text-blue-800 rounded px-2 py-1 my-1"
     >
       <span {...listeners} {...attributes} className="cursor-grab flex-grow">{name}</span>
-      <button 
-        onClick={onRemove} 
+      <button
+        onClick={onRemove}
         className="ml-2 text-blue-600 hover:text-blue-900"
         title="Remove Intern"
       >
