@@ -1,6 +1,4 @@
-// app/lib/scheduleGenerator.ts
-
-import { SCHEDULE_DATA, ALL_PRIORITIES } from './data';
+import { SCHEDULE_DATA } from './data';
 
 // Define types for better code quality and safety
 type Schedule = { [key: string]: string[] };
@@ -8,8 +6,6 @@ type CompleteSchedule = { [key: string]: Schedule };
 type AllSchedules = { [key: string]: CompleteSchedule };
 type DepartmentData = { [key: string]: string[] };
 
-// --- MODIFIED ---
-// New helper to format dates like '08 Aug 2025'
 const formatFullDate = (date: Date): string => {
   return date.toLocaleDateString('en-GB', {
     day: '2-digit',
@@ -20,7 +16,6 @@ const formatFullDate = (date: Date): string => {
 
 // --- Main Generation Logic ---
 
-// Equivalent to get_department_divisions
 export function getDepartmentDivisions(countryKey: keyof typeof SCHEDULE_DATA): DepartmentData {
     const departmentsData = SCHEDULE_DATA[countryKey];
     if (!departmentsData) return {};
@@ -33,7 +28,8 @@ export function getDepartmentDivisions(countryKey: keyof typeof SCHEDULE_DATA): 
     return result;
 }
 
-// Equivalent to generate_initial_schedule
+// This function correctly uses the custom `priorityList` for the initial assignment.
+// The `subunitsList` (default order) is used to create the schedule keys, ensuring the columns display correctly.
 function generateInitialSchedule(subunitsList: string[], internsList: string[], priorityList: string[]): Schedule {
     const schedule: Schedule = {};
     subunitsList.forEach(subunit => schedule[subunit] = []);
@@ -49,7 +45,9 @@ function generateInitialSchedule(subunitsList: string[], internsList: string[], 
     return schedule;
 }
 
-// Equivalent to rotate_schedule
+
+// --- MODIFIED: This function now rotates based on the default display order ---
+// This creates the simple "shift one step forward" rotation for weeks 2 onwards.
 function rotateSchedule(currentSchedule: Schedule, subunitsList: string[]): Schedule {
     const newSchedule: Schedule = {};
     subunitsList.forEach(subunit => newSchedule[subunit] = []);
@@ -59,13 +57,21 @@ function rotateSchedule(currentSchedule: Schedule, subunitsList: string[]): Sche
     for (let i = 0; i < subunitsList.length; i++) {
         const currentSubunit = subunitsList[i];
         const nextSubunit = subunitsList[(i + 1) % subunitsList.length];
-        newSchedule[nextSubunit] = [...(currentSchedule[currentSubunit] || [])];
+
+        const internsToMove = currentSchedule[currentSubunit] || [];
+        newSchedule[nextSubunit] = internsToMove;
     }
     return newSchedule;
 }
 
-// Equivalent to build_complete_rotational_schedule
-function buildCompleteRotationalSchedule(initialSchedule: Schedule, subunitsList: string[], numRotations: number, todayDate: Date): CompleteSchedule {
+
+// --- MODIFIED: This function now accepts the default `subunitsList` for rotation logic ---
+function buildCompleteRotationalSchedule(
+    initialSchedule: Schedule,
+    subunitsList: string[], // <-- Use the default list for rotation
+    numRotations: number,
+    todayDate: Date
+): CompleteSchedule {
     const completeSchedule: CompleteSchedule = {};
     let currentSchedule = { ...initialSchedule };
     let currentStartDate = new Date(todayDate);
@@ -74,12 +80,10 @@ function buildCompleteRotationalSchedule(initialSchedule: Schedule, subunitsList
         const endDate = new Date(currentStartDate);
         endDate.setDate(currentStartDate.getDate() + 6);
         
-        // --- MODIFIED ---
-        // The schedule key now uses the new, more descriptive format
         const scheduleKey = `${formatFullDate(currentStartDate)} to ${formatFullDate(endDate)}`;
+        completeSchedule[scheduleKey] = JSON.parse(JSON.stringify(currentSchedule));
 
-        completeSchedule[scheduleKey] = JSON.parse(JSON.stringify(currentSchedule)); // Deep copy
-
+        // Pass the default `subunitsList` to the rotate function for predictable rotation.
         currentSchedule = rotateSchedule(currentSchedule, subunitsList);
         currentStartDate.setDate(currentStartDate.getDate() + 7);
     }
@@ -93,6 +97,7 @@ interface GenerateSchedulesParams {
     internsList: string[];
     startingDate: Date;
     startDepartmentName: string;
+    customPriorities: { [key: string]: string[] };
 }
 
 export function generateSchedules({
@@ -100,10 +105,11 @@ export function generateSchedules({
     internsList,
     startingDate,
     startDepartmentName,
+    customPriorities,
 }: GenerateSchedulesParams): { finalSchedules: AllSchedules; departmentData: DepartmentData } {
     
     const departmentData = getDepartmentDivisions(countryKey);
-    const priorityList = ALL_PRIORITIES[countryKey];
+    const priorityList = customPriorities;
     
     const allGeneratedSchedules: AllSchedules = {};
     let currentDate = new Date(startingDate);
@@ -111,21 +117,24 @@ export function generateSchedules({
     const departmentNames = Object.keys(departmentData);
     const numRotations = SCHEDULE_DATA[countryKey].departments[0]?.duration_weeks || 13;
 
-    // Reorder departments based on user's starting choice
     const startIdx = departmentNames.indexOf(startDepartmentName);
     const reorderedDepartmentNames = [...departmentNames.slice(startIdx), ...departmentNames.slice(0, startIdx)];
 
     for (const deptName of reorderedDepartmentNames) {
+        // This is the original, default-ordered list of subunits for display and for rotation after week 1.
         const subunits = departmentData[deptName];
-        const priorityKey = `${deptName}_PRIORITY` as keyof typeof priorityList;
+        const priorityKey = `${deptName}_PRIORITY`;
         
         if (priorityList[priorityKey]) {
+            // This is the custom, reordered list for the initial assignment in week 1.
             const priority = priorityList[priorityKey];
+            
             const initialSchedule = generateInitialSchedule(subunits, internsList, priority);
             
+            // --- MODIFIED: Pass the default `subunits` list for rotation logic ---
             const finalSchedule = buildCompleteRotationalSchedule(
                 initialSchedule,
-                subunits,
+                subunits, // Use the default list for simple rotation
                 numRotations,
                 currentDate
             );

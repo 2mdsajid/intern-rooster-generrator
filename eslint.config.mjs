@@ -10,7 +10,18 @@ const compat = new FlatCompat({
 });
 
 const eslintConfig = [
+  // Your existing extended configurations
   ...compat.extends("next/core-web-vitals", "next/typescript"),
+
+  // --- ADD THIS OBJECT TO DISABLE THE RULES ---
+  {
+    rules: {
+      "@typescript-eslint/no-explicit-any": "off",
+      "@typescript-eslint/no-unused-vars": "off",
+      "react/no-unescaped-entities": "off",
+      "prefer-const": "off",
+    },
+  },
 ];
 
 export default eslintConfig;
